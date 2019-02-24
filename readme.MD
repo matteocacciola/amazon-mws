@@ -200,6 +200,12 @@ $client->ListOrderItems($AmazonOrderId);
 // Returns orders created or updated during a time frame that you specify.
 $client->ListOrders($from, $allMarketplaces = false, $states = ['Unshipped', 'PartiallyShipped'], $FulfillmentChannel = 'MFN', $tillDate = null, $fromUpdated = false);
 
+// Returns orders created or updated during a time frame that you specify, surfing along all the next tokens.
+$client->ListOrdersWithAllNextTokens($from, $allMarketplaces = false, $states = ['Unshipped', 'PartiallyShipped'], $FulfillmentChannel = 'MFN', $tillDate = null, $fromUpdated = false);
+
+// Returns orders created or updated during a time frame that you specify, by the next token.
+$client->ListOrdersByNextToken($nextToken)
+
 // Returns your active recommendations for a specific category or for all categories for a specific marketplace.
 $client->ListRecommendations($RecommendationCategory = null);
 

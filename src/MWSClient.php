@@ -418,11 +418,92 @@ class MWSClient
         }
 
         return $array;
-
     }
 
     /**
      * Returns orders created or updated during a time frame that you specify.
+     *
+     * @param \DateTime $from, beginning of time frame
+     * @param boolean $allMarketplaces , list orders from all marketplaces
+     * @param array $states , an array containing orders states you want to filter on
+     * @param string $FulfillmentChannel
+     * @param \DateTime $till, end of time frame
+     * @param bool $fromUpdated
+     *
+     * @return array
+     */
+    public function ListOrders(
+        \DateTime $from,
+        $allMarketplaces = false,
+        $states = ['Unshipped', 'PartiallyShipped'],
+        $FulfillmentChannels = 'MFN',
+        \DateTime $till = null,
+        $fromUpdated = false
+    )
+    {
+        if ($fromUpdated) {
+            $query = [
+                'LastUpdatedAfter' => gmdate(self::DATE_FORMAT, $from->getTimestamp())
+            ];
+        } else {
+            $query = [
+                'CreatedAfter' => gmdate(self::DATE_FORMAT, $from->getTimestamp())
+            ];
+        }
+
+        if ($till !== null) {
+            $query['CreatedBefore'] = gmdate(self::DATE_FORMAT, $till->getTimestamp());
+        }
+
+        $counter = 1;
+        foreach ($states as $status) {
+            $query['OrderStatus.Status.' . $counter] = $status;
+            $counter                                 = $counter + 1;
+        }
+
+        if ($allMarketplaces == true) {
+            $counter = 1;
+            foreach ($this->MarketplaceIds as $key => $value) {
+                $query['MarketplaceId.Id.' . $counter] = $key;
+                $counter                               = $counter + 1;
+            }
+        }
+
+        if (is_array($FulfillmentChannels)) {
+            $counter = 1;
+            foreach ($FulfillmentChannels as $fulfillmentChannel) {
+                $query['FulfillmentChannel.Channel.' . $counter] = $fulfillmentChannel;
+                $counter                                         = $counter + 1;
+            }
+        } else {
+            $query['FulfillmentChannel.Channel.1'] = $FulfillmentChannels;
+        }
+
+        $response = $this->request('ListOrders', $query);
+
+        if (isset($response['ListOrdersResult']['Orders']['Order'])) {
+            if (isset($response['ListOrdersResult']['NextToken'])) {
+                $data['ListOrders'] = $response['ListOrdersResult']['Orders']['Order'];
+                $data['NextToken']  = $response['ListOrdersResult']['NextToken'];
+
+                return $data;
+            }
+
+            $response = $response['ListOrdersResult']['Orders']['Order'];
+
+            if (array_keys($response) !== range(0, count($response) - 1)) {
+                return [$response];
+            }
+
+            return $response;
+
+        } else {
+            return [];
+        }
+    }
+
+    /**
+     * Returns orders created or updated during a time frame that you specify, surfing along all the next tokens.
      *
      * @param \DateTime $from , beginning of time frame
      * @param boolean $allMarketplaces , list orders from all marketplaces
@@ -433,11 +514,13 @@ class MWSClient
      *
      * @return array
      */
-    public function ListOrders(
-        \DateTime $from, $allMarketplaces = false, $states = [
-        'Unshipped',
-        'PartiallyShipped'
-    ], $FulfillmentChannels = 'MFN', \DateTime $till = null, $fromUpdated = false
+    public function ListOrdersWithAllNextTokens(
+        \DateTime $from,
+        $allMarketplaces = false,
+        $states = ['Unshipped', 'PartiallyShipped'],
+        $FulfillmentChannels = 'MFN',
+        \DateTime $till = null,
+        $fromUpdated = false
     )
     {
         if ($fromUpdated) {
@@ -1501,6 +1584,7 @@ class MWSClient
 
         return [];
     }
+
 
 
     /**
