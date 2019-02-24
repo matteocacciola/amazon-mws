@@ -38,6 +38,18 @@ foreach ($orders as $order) {
     print_r($items);
 }
 ```
+### Update order delivery state
+```php
+$client->SetDeliveryState([
+    $AmazonOrderId => [
+        "carrierCode" => "UPS",
+        "carrierName" => "Carrier Name",
+        "trackingCode" => "34JD943T6", // optional
+        "shippingMethod" => "1 Day", // required
+    ]
+]);
+```
+One of the two between "carrierCode" or "carrierName" is required, as well as "shippingMethod".
 ### Get product attributes
 ```php
 $searchField = 'ASIN'; // Can be GCID, SellerSKU, UPC, EAN, ISBN, or JAN
@@ -141,6 +153,9 @@ $client->GetMyPriceForSKU($sku_array = [], $ItemCondition = null);
 
 // Returns an order based on the AmazonOrderId values that you specify.
 $client->GetOrder($AmazonOrderId);
+
+// Update the information about shipping of an order.
+$client->SetDeliveryState(array $data);
 
 // Returns the parent product categories that a product belongs to, based on ASIN.
 $client->GetProductCategoriesForASIN($ASIN);

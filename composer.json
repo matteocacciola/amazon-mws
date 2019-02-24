@@ -1,13 +1,13 @@
 {
-    "name": "mcs/amazon-mws",
-    "description": "Library to interface with Amazon MWS",
+    "name": "matteocacciola/amazon-mws",
+    "description": "Library to interface with Amazon MWS - forked from https://github.com/meertensm/amazon-mws",
     "license": "MIT",
     "keywords": ["amazon", "mws"],
     "minimum-stability": "dev",
     "authors": [
         {
-            "name": "Michiel Meertens",
-            "email": "meertensmichiel28@gmail.com"
+            "name": "Matteo Cacciola",
+            "email": "matteo.cacciola@gmail.com"
         }
     ],
     "require": {
