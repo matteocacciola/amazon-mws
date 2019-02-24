@@ -1347,13 +1347,13 @@ class MWSClient
 
         $fulfillmentData['ShippingMethod'] = $data['shippingMethod'];
 
-        if (isset($data['trackingCode'])) {
+        if (!empty($data['trackingCode'])) {
             $fulfillmentData['ShipperTrackingNumber'] = $data['trackingCode'];
         }
 
-        if (isset($data['carrierCode'])) {
+        if (!empty($data['carrierCode'])) {
             $fulfillmentData['CarrierCode'] = $data['carrierCode'];
-        } else if (isset($data['carrierName'])) {
+        } elseif (!empty($data['carrierName'])) {
             $fulfillmentData['CarrierName'] = $data['carrierName'];
         }
 
