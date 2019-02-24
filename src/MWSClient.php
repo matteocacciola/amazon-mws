@@ -1319,6 +1319,9 @@ class MWSClient
     }
 
     /**
+     * Set the status of one or more orders
+     * Reference: https://stackoverflow.com/a/37822611
+     * 
      * @param array $orders
      *
      * @return array
