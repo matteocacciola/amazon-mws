@@ -424,17 +424,20 @@ class MWSClient
     /**
      * Returns orders created or updated during a time frame that you specify.
      *
-     * @param \DateTime $from, beginning of time frame
+     * @param \DateTime $from , beginning of time frame
      * @param boolean $allMarketplaces , list orders from all marketplaces
      * @param array $states , an array containing orders states you want to filter on
      * @param string $FulfillmentChannel
-     * @param \DateTime $till, end of time frame
+     * @param \DateTime $till , end of time frame
      * @param bool $fromUpdated
      *
      * @return array
      */
     public function ListOrders(
-        \DateTime $from, $allMarketplaces = false, $states = ['Unshipped', 'PartiallyShipped'], $FulfillmentChannels = 'MFN', \DateTime $till = null, $fromUpdated = false
+        \DateTime $from, $allMarketplaces = false, $states = [
+        'Unshipped',
+        'PartiallyShipped'
+    ], $FulfillmentChannels = 'MFN', \DateTime $till = null, $fromUpdated = false
     )
     {
         if ($fromUpdated) {
@@ -475,27 +478,39 @@ class MWSClient
             $query['FulfillmentChannel.Channel.1'] = $FulfillmentChannels;
         }
 
-        $response = $this->request('ListOrders', $query);
+        $response       = $this->request('ListOrders', $query);
+        $arrResponses[] = $response;
 
-        if (isset($response['ListOrdersResult']['Orders']['Order'])) {
-            if (isset($response['ListOrdersResult']['NextToken'])) {
-                $data['ListOrders'] = $response['ListOrdersResult']['Orders']['Order'];
-                $data['NextToken']  = $response['ListOrdersResult']['NextToken'];
-
-                return $data;
-            }
-
-            $response = $response['ListOrdersResult']['Orders']['Order'];
-
-            if (array_keys($response) !== range(0, count($response) - 1)) {
-                return [$response];
-            }
-
-            return $response;
-
-        } else {
-            return [];
+        if (isset($response['ListOrdersResult']['NextToken'])) {
+            do {
+                $query          = [
+                    'NextToken' => $response['ListOrdersResult']['NextToken']
+                ];
+                $response       = $this->request(
+                    'ListOrdersByNextToken',
+                    $query
+                );
+                $arrResponses[] = $response;
+            } while (isset($response['ListOrdersResult']['NextToken']));
         }
+
+        $finalResponse = [];
+        foreach ($arrResponses as $response) {
+            $arrOrders = [];
+            if (isset($response['ListOrdersResult']['Orders']['Order'])) {
+                $arrOrders = $response['ListOrdersResult']['Orders']['Order'];
+            }
+            if (isset($response['ListOrdersByNextTokenResult']['Orders']['Order'])) {
+                $arrOrders = $response['ListOrdersByNextTokenResult']['Orders']['Order'];
+            }
+
+            $finalResponse = (count($arrOrders) > 0)
+                ? ((array_keys($arrOrders) !== range(0, count($arrOrders) - 1)) ? array_merge($finalResponse, [$arrOrders]) : array_merge($finalResponse, $arrOrders))
+                : array_merge($finalResponse, [])
+            ;
+        }
+
+        return $finalResponse;
     }
 
     /**
@@ -1385,7 +1400,7 @@ class MWSClient
     /**
      * Set the status of one or more orders
      * Reference: https://stackoverflow.com/a/37822611
-     * 
+     *
      * @param array $orders
      *
      * @return array
@@ -1486,7 +1501,6 @@ class MWSClient
 
         return [];
     }
-
 
 
     /**
