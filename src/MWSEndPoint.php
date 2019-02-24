@@ -60,6 +60,12 @@ class MWSEndPoint{
             'path' => '/',
             'date' => '2009-01-01'
         ],
+        'GetReportScheduleList' => [
+            'method' => 'POST',
+            'action' => 'GetReportScheduleList',
+            'path' => '/',
+            'date' => '2009-01-01'
+        ],
         'GetReportRequestList' => [
             'method' => 'POST',
             'action' => 'GetReportRequestList',
@@ -99,6 +105,12 @@ class MWSEndPoint{
         'ListOrderItems' => [
             'method' => 'POST',
             'action' => 'ListOrderItems',
+            'path' => '/Orders/2013-09-01',
+            'date' => '2013-09-01'
+        ],
+        'ListOrderItemsByNextToken' => [
+            'method' => 'POST',
+            'action' => 'ListOrderItemsByNextToken',
             'path' => '/Orders/2013-09-01',
             'date' => '2013-09-01'
         ],
@@ -161,6 +173,18 @@ class MWSEndPoint{
             'action' => 'CreateShipment',
             'path' => '/MerchantFulfillment/2015-06-01',
             'date' => '2015-06-01'
+        ],
+        'ListFinancialEvents' => [
+            'method' => 'POST',
+            'action' => 'ListFinancialEvents',
+            'path' => '/Finances/2015-05-01',
+            'date' => '2015-05-01'
+        ],
+        'ListFinancialEventsByNextToken' => [
+            'method' => 'POST',
+            'action' => 'ListFinancialEventsByNextToken',
+            'path' => '/Finances/2015-05-01',
+            'date' => '2015-05-01'
         ]
     ];
 

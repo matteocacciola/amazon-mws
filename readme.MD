@@ -35,7 +35,7 @@ $orders = $client->ListOrders($fromDate);
 foreach ($orders as $order) {
     $items = $client->ListOrderItems($order['AmazonOrderId']);
     print_r($order);
-    print_r($items);
+    print_r($items['ListOrderItems']);
 }
 ```
 ### Update order delivery status
@@ -79,7 +79,7 @@ $product->quantity = 10;
 
 if ($product->validate()) {
     // You can also submit an array of MWSProduct objects
-    $result = $client->postProduct($product);    
+    $result = $client->PostProduct($product);    
 } else {
     $errors = $product->getValidationErrors();        
 }  
@@ -87,7 +87,7 @@ if ($product->validate()) {
 
 ### Update product stock
 ```php
-$result = $client->updateStock([
+$result = $client->UpdateStock([
     'sku1' => 20,
     'sku2' => 9,
 ]);
@@ -99,7 +99,7 @@ print_r($info);
 
 ### Update product stock with fulfillment latency specified
 ```php
-$result = $client->updateStockWithFulfillmentLatency([
+$result = $client->UpdateStockWithFulfillmentLatency([
     ['sku' => 'sku1', 'quantity' => 20, 'latency' => 1],
     ['sku' => 'sku2', 'quantity' => 20, 'latency' => 1],
 ]);
@@ -111,7 +111,7 @@ print_r($info);
 
 ### Update product pricing
 ```php
-$result = $client->updatePrice([
+$result = $client->UpdatePrice([
     'sku1' => '20.99',
     'sku2' => '100.00',
 ]);
@@ -179,11 +179,17 @@ $client->GetProductCategoriesForASIN($ASIN);
 // Returns the parent product categories that a product belongs to, based on SellerSKU.
 $client->GetProductCategoriesForSKU($SellerSKU);
 
+// Delete product(s) based on SKU
+$client->DeleteProductBySKU(array $SKU);
+
 // Get a report's content
 $client->GetReport($ReportId);
 
 // Returns a list of reports that were created in the previous 90 days.
 $client->GetReportList($ReportTypeList = []);
+
+// Returns a list of order report requests that are scheduled to be submitted to Amazon MWS for processing.
+$client->GetReportScheduleList($ReportTypeList = []);
 
 // Get a report's processing status
 $client->GetReportRequestStatus($ReportId);
@@ -194,17 +200,23 @@ $client->ListInventorySupply($sku_array = []);
 // Returns a list of marketplaces that the seller submitting the request can sell in, and a list of participations that include seller-specific information in that marketplace
 $client->ListMarketplaceParticipations();
 
-// Returns order items based on the AmazonOrderId that you specify.
-$client->ListOrderItems($AmazonOrderId);
-
 // Returns orders created or updated during a time frame that you specify.
 $client->ListOrders($from, $allMarketplaces = false, $states = ['Unshipped', 'PartiallyShipped'], $FulfillmentChannel = 'MFN', $tillDate = null, $fromUpdated = false);
 
 // Returns orders created or updated during a time frame that you specify, surfing along all the next tokens.
 $client->ListOrdersWithAllNextTokens($from, $allMarketplaces = false, $states = ['Unshipped', 'PartiallyShipped'], $FulfillmentChannel = 'MFN', $tillDate = null, $fromUpdated = false);
 
-// Returns orders created or updated during a time frame that you specify, by the next token.
-$client->ListOrdersByNextToken($nextToken)
+// Returns orders created or updated, by the next token.
+$client->ListOrdersByNextToken($nextToken);
+
+// Returns order items based on the AmazonOrderId that you specify.
+$client->ListOrderItems($AmazonOrderId);
+
+// Returns order items based on the AmazonOrderId that you specify, surfing along all the next tokens.
+$client->ListOrderItemsWithAllNextTokens($AmazonOrderId);
+
+// Returns order items, by the next token.
+$client->ListOrderItemsByNextToken($NextToken);
 
 // Returns your active recommendations for a specific category or for all categories for a specific marketplace.
 $client->ListRecommendations($RecommendationCategory = null);
@@ -222,15 +234,24 @@ $client->GetFeedSubmissionList();
 $client->debugNextFeed();
 
 // Post to create or update a product (_POST_FLAT_FILE_LISTINGS_DATA_)
-$client->postProduct($MWSProduct);
+$client->PostProduct($MWSProduct);
 
 // Update a product's price
-$client->updatePrice($array);
+$client->UpdatePrice($array);
 
-// Update a product's stock quantity
-$client->updateStock($array);
+// Update a product(s) stock quantity
+$client->UpdateStock($array);
 
 // A method to quickly check if the supplied credentials are valid
 $client->validateCredentials();
+
+// List of Financial Events
+$client->ListFinancialEvents($fromDate);
+
+// List of Financial Events, surfing along all the next tokens.
+$client->ListFinancialEventsWithAllNextTokens($fromDate);
+
+// List of Financial Events by Next token
+$client->ListFinancialEventsByNextToken($token);
 
 ```

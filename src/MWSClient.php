@@ -363,7 +363,6 @@ class MWSClient
         }
 
         return $array;
-
     }
 
     /**
@@ -597,7 +596,7 @@ class MWSClient
     }
 
     /**
-     * Returns orders created or updated during a time frame that you specify.
+     * Returns orders created or updated, by the $nextToken.
      *
      * @param string $nextToken
      *
@@ -667,11 +666,91 @@ class MWSClient
 
         $result = array_values($response['ListOrderItemsResult']['OrderItems']);
 
-        if (isset($result[0]['QuantityOrdered'])) {
-            return $result;
-        } else {
-            return $result[0];
+        $items = isset($result[0]['QuantityOrdered'])
+            ? $result
+            : $result[0]
+        ;
+
+        $NextToken = isset($response['ListOrderItemsResult']['NextToken'])
+            ? $response['ListOrderItemsResult']['NextToken']
+            : null
+        ;
+
+        return ['ListOrderItems' => $items, 'NextToken' => $NextToken];
+    }
+
+    /**
+     * Returns order items based on the AmazonOrderId that you specify, surfing along all the next tokens.
+     *
+     * @param string $AmazonOrderId
+     *
+     * @return array
+     */
+    public function ListOrderItemsWithAllNextTokens($AmazonOrderId)
+    {
+        $response = $this->request('ListOrderItems', [
+            'AmazonOrderId' => $AmazonOrderId
+        ]);
+
+        $arrResponses[] = $response;
+
+        if (isset($response['ListOrderItemsResult']['NextToken'])) {
+            do {
+                $query          = [
+                    'NextToken' => $response['ListOrderItemsResult']['NextToken']
+                ];
+                $response       = $this->request(
+                    'ListOrderItemsByNextToken',
+                    $query
+                );
+
+                $arrResponses[] = $response;
+            } while (isset($response['ListOrdersResult']['NextToken']));
         }
+
+        $finalResponse = [];
+        foreach ($arrResponses as $response) {
+            $result = array_values($response['ListOrderItemsResult']['OrderItems']);
+
+            $items = isset($result[0]['QuantityOrdered'])
+                ? $result
+                : $result[0]
+            ;
+
+            $finalResponse = array_merge($finalResponse, $items);
+        }
+
+        return $finalResponse;
+    }
+
+    /**
+     * Returns order items based on the $NextToken.
+     *
+     * @param string $nextToken
+     *
+     * @return array
+     */
+    public function ListOrderItemsByNextToken($NextToken)
+    {
+        $items = [];
+
+        $response = $this->request('ListOrderItemsByNextToken', [
+            'NextToken' => $NextToken
+        ]);
+
+        $result = array_values($response['ListOrderItemsByNextTokenResult']['OrderItems']);
+
+        $items = isset($result[0]['QuantityOrdered'])
+            ? $result
+            : $result[0]
+        ;
+
+        $NextToken = isset($response['ListOrderItemsByNextTokenResult']['NextToken'])
+            ? $response['ListOrderItemsByNextTokenResult']['NextToken']
+            : null
+        ;
+
+        return ['items' => $items, 'NextToken' => $NextToken];
     }
 
     /**
@@ -679,7 +758,7 @@ class MWSClient
      *
      * @param string $SellerSKU
      *
-     * @return array if found, false if not found
+     * @return array|bool array if found, false if not found
      */
     public function GetProductCategoriesForSKU($SellerSKU)
     {
@@ -700,7 +779,7 @@ class MWSClient
      *
      * @param string $ASIN
      *
-     * @return array if found, false if not found
+     * @return array|bool array if found, false if not found
      */
     public function GetProductCategoriesForASIN($ASIN)
     {
@@ -724,6 +803,7 @@ class MWSClient
      * @param string [$type = 'ASIN']  the identifier name
      *
      * @return array
+     * @throws Exception
      */
     public function GetMatchingProductForId(array $asin_array, $type = 'ASIN')
     {
@@ -858,6 +938,7 @@ class MWSClient
      * @param string [$query_context_id = null] the identifier for the context within which the given search will be performed. see: http://docs.developer.amazonservices.com/en_US/products/Products_QueryContextIDs.html
      *
      * @return array
+     * @throws Exception
      */
     public function ListMatchingProducts($query, $query_context_id = null)
     {
@@ -908,7 +989,6 @@ class MWSClient
 
     }
 
-
     /**
      * Returns a list of reports that were created in the previous 90 days.
      *
@@ -920,6 +1000,7 @@ class MWSClient
     {
         $array   = [];
         $counter = 1;
+
         if (count($ReportTypeList)) {
             foreach ($ReportTypeList as $ReportType) {
                 $array['ReportTypeList.Type.' . $counter] = $ReportType;
@@ -931,11 +1012,34 @@ class MWSClient
     }
 
     /**
+     * Returns a list of order report requests that are scheduled to be submitted to Amazon MWS for processing.
+     *
+     * @param array [$ReportTypeList = []]
+     *
+     * @return array
+     */
+    public function GetReportScheduleList($ReportTypeList = [])
+    {
+        $array = [];
+        $counter = 1;
+
+        if (count($ReportTypeList)) {
+            foreach($ReportTypeList as $ReportType) {
+                $array['ReportTypeList.Type.' . $counter] = $ReportType;
+                $counter++;
+            }
+        }
+
+        return $this->request('GetReportScheduleList', $array);
+    }
+
+
+    /**
      * Returns your active recommendations for a specific category or for all categories for a specific marketplace.
      *
      * @param string [$RecommendationCategory = null] One of: Inventory, Selection, Pricing, Fulfillment, ListingQuality, GlobalSelling, Advertising
      *
-     * @return array/false if no result
+     * @return array|bool array/false if no result
      */
     public function ListRecommendations($RecommendationCategory = null)
     {
@@ -959,6 +1063,7 @@ class MWSClient
 
     /**
      * Returns a list of marketplaces that the seller submitting the request can sell in, and a list of participations that include seller-specific information in that marketplace
+     *
      * @return array
      */
     public function ListMarketplaceParticipations()
@@ -972,13 +1077,13 @@ class MWSClient
     }
 
     /**
-     * Delete product's based on SKU
+     * Delete product(s) based on SKU
      *
-     * @param string $array array containing sku's
+     * @param array $array array containing sku's
      *
      * @return array feed submission result
      */
-    public function deleteProductBySKU(array $array)
+    public function DeleteProductBySKU(array $array)
     {
 
         $feed = [
@@ -1000,13 +1105,13 @@ class MWSClient
     }
 
     /**
-     * Update a product's stock quantity
+     * Update a product(s) stock quantity
      *
      * @param array $array array containing sku as key and quantity as value
      *
      * @return array feed submission result
      */
-    public function updateStock(array $array)
+    public function UpdateStock(array $array)
     {
         $feed = [
             'MessageType' => 'Inventory',
@@ -1035,7 +1140,7 @@ class MWSClient
      *
      * @return array feed submission result
      */
-    public function updateStockWithFulfillmentLatency(array $array)
+    public function UpdateStockWithFulfillmentLatency(array $array)
     {
         $feed = [
             'MessageType' => 'Inventory',
@@ -1067,9 +1172,8 @@ class MWSClient
      *
      * @return array feed submission result
      */
-    public function updatePrice(array $standardprice, array $saleprice = null)
+    public function UpdatePrice(array $standardprice, array $saleprice = null)
     {
-
         $feed = [
             'MessageType' => 'Price',
             'Message'     => []
@@ -1113,7 +1217,7 @@ class MWSClient
      *
      * @return array
      */
-    public function postProduct($MWSProduct)
+    public function PostProduct($MWSProduct)
     {
 
         if (!is_array($MWSProduct)) {
@@ -1199,7 +1303,6 @@ class MWSClient
      */
     public function SubmitFeed($FeedType, $feedContent, $debug = false, $options = [])
     {
-
         if (is_array($feedContent)) {
             $feedContent = $this->arrayToXml(
                 array_merge([
@@ -1271,10 +1374,11 @@ class MWSClient
      * Creates a report request and submits the request to Amazon MWS.
      *
      * @param string $report (http://docs.developer.amazonservices.com/en_US/reports/Reports_ReportType.html)
-     * @param DateTime [$StartDate = null]
-     * @param EndDate [$EndDate = null]
+     * @param DateTime|null [$StartDate = null]
+     * @param DateTime|null [$EndDate = null]
      *
-     * @return string ReportRequestId
+     * @return string
+     * @throws Exception
      */
     public function RequestReport($report, $StartDate = null, $EndDate = null)
     {
@@ -1316,7 +1420,7 @@ class MWSClient
      *
      * @param string $ReportId
      *
-     * @return array on succes
+     * @return array|bool array on success, otherwise false
      */
     public function GetReport($ReportId)
     {
@@ -1352,7 +1456,7 @@ class MWSClient
      *
      * @param string $ReportId
      *
-     * @return array if the report is found
+     * @return array|bool if the report is found, an array is returned, boolean false otherwise
      */
     public function GetReportRequestStatus($ReportId)
     {
@@ -1365,7 +1469,6 @@ class MWSClient
         }
 
         return false;
-
     }
 
     /**
@@ -1585,7 +1688,108 @@ class MWSClient
         return [];
     }
 
+    /**
+     * List of Financial Events.
+     *
+     * @param \DateTime $fromTime
+     *
+     * @return array
+     */
+    public function ListFinancialEvents(\DateTime $fromTime)
+    {
+        $response = $this->request('ListFinancialEvents', [
+            'PostedAfter' => gmdate(self::DATE_FORMAT, $fromTime)
+        ]);
 
+        $events = isset($response['ListFinancialEventsResult']['FinancialEvents'])
+            ? $response['ListFinancialEventsResult']['FinancialEvents']
+            : []
+        ;
+
+        $NextToken = isset($response['ListFinancialEventsResult']['NextToken'])
+            ? $response['ListFinancialEventsResult']['NextToken']
+            : null
+        ;
+
+        return ['ListFinancialEvents' => $events, 'NextToken' => $NextToken];
+    }
+
+    /**
+     * List of Financial Events, surfing along all the next tokens.
+     *
+     * @param \DateTime $fromTime
+     *
+     * @return array
+     */
+    public function ListFinancialEventsWithAllNextTokens(\DateTime $fromTime)
+    {
+        $response = $this->request('ListFinancialEvents', [
+            'PostedAfter' => gmdate(self::DATE_FORMAT, $fromTime)
+        ]);
+
+        $arrResponses[] = $response;
+
+        if (isset($response['ListFinancialEventsResult']['NextToken'])) {
+            do {
+                $query          = [
+                    'NextToken' => $response['ListFinancialEventsResult']['NextToken']
+                ];
+                $response       = $this->request(
+                    'ListFinancialEventsByNextToken',
+                    $query
+                );
+                $arrResponses[] = $response;
+            } while (isset($response['ListFinancialEventsResult']['NextToken']));
+        }
+
+        $finalResponse = [];
+        foreach ($arrResponses as $response) {
+            $arrEvents = [];
+            if (isset($response['ListFinancialEventsResult']['FinancialEvents'])) {
+                $arrEvents = $response['ListFinancialEventsResult']['FinancialEvents'];
+            }
+            if (isset($response['ListFinancialEventsByNextTokenResult']['FinancialEvents'])) {
+                $arrEvents = $response['ListFinancialEventsByNextTokenResult']['FinancialEvents'];
+            }
+
+            $finalResponse = (count($arrEvents) > 0)
+                ? ((array_keys($arrEvents) !== range(0, count($arrEvents) - 1)) ? array_merge($finalResponse, [$arrEvents]) : array_merge($finalResponse, $arrEvents))
+                : array_merge($finalResponse, [])
+            ;
+        }
+
+        return $finalResponse;
+    }
+
+    /**
+     * List of Financial Events by Next token.
+     *
+     * @param $NextToken
+     *
+     * @return array
+     */
+    public function ListFinancialEventsByNextToken($NextToken)
+    {
+        $query = [
+            'NextToken' => $NextToken
+        ];
+        $response = $this->request(
+            'ListFinancialEventsByNextToken',
+            $query
+        );
+
+        $events = isset($response['ListFinancialEventsByNextTokenResult']['FinancialEvents'])
+            ? $response['ListFinancialEventsByNextTokenResult']['FinancialEvents']
+            : []
+        ;
+
+        $NextToken = isset($response['ListFinancialEventsByNextTokenResult']['NextToken'])
+            ? $response['ListFinancialEventsByNextTokenResult']['NextToken']
+            : null
+        ;
+
+        return ['ListFinancialEvents' => $events, 'NextToken' => $NextToken];
+    }
 
     /**
      * Request MWS
