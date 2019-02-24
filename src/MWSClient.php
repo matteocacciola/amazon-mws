@@ -1293,13 +1293,16 @@ class MWSClient
 
     /**
      * Sets the shipping status of one or multiple orders
+     * References:
+     * - https://stackoverflow.com/a/16842965
+     * - https://github.com/meertensm/amazon-mws/issues/55#issuecomment-399400316
      *
      * @param array $orders array containing AmazonOrderID as key and array as values
      *
      * @return array feed submission result
      * @throws Exception
      */
-    public function SetDeliveryState(array $orders)
+    public function SetDeliveryStatus(array $orders)
     {
         $feedType = '_POST_ORDER_FULFILLMENT_DATA_';
 
@@ -1315,6 +1318,50 @@ class MWSClient
         return $this->SubmitFeed($feedType, $feed);
     }
 
+    /**
+     * @param array $orders
+     *
+     * @return array
+     */
+    public function OrderAcknowledgement(array $orders)
+    {
+        $feedType = '_POST_ORDER_ACKNOWLEDGEMENT_DATA_';
+
+        $feed = [
+            'MessageType' => 'OrderAcknowledgement',
+            'Message'     => []
+        ];
+
+        foreach ($orders as $orderId => $data) {
+            $feed['Message'][] = $this->createOrderAcknowledgementDataMessage($orderId, $data);
+        }
+
+        return $this->SubmitFeed($feedType, $feed);
+    }
+
+    /**
+     * @param string $orderId
+     * @param array $data
+     *
+     * @return array
+     * @throws Exception
+     */
+    private function createOrderAcknowledgementDataMessage(string $orderId, array $data)
+    {
+        if ((!isset($data['statusCode']) || empty($data['statusCode']))) {
+            throw new \Exception('Missing required status code data');
+        }
+
+        $fulfillmentMessage = [
+            'MessageID'            => rand(),
+            'OrderAcknowledgement' => [
+                'AmazonOrderID' => $orderId,
+                'StatusCode'    => $data['statusCode']
+            ]
+        ];
+
+        return $fulfillmentMessage;
+    }
 
     /**
      * @param array $data
@@ -1325,11 +1372,11 @@ class MWSClient
     private function createPostOrderFulFillmentDataMessage(string $orderId, array $data)
     {
         if ((!isset($data['carrierCode']) || empty($data['carrierCode'])) && (!isset($data['carrierName']) || empty($data['carrierName']))) {
-            throw new Exception('Missing required carrier data');
+            throw new \Exception('Missing required carrier data');
         }
 
         if (!isset($data['shippingMethod'])) {
-            throw new Exception('Missing required shipping method data');
+            throw new \Exception('Missing required shipping method data');
         }
 
         if (!isset($data['shippingDate'])) {
@@ -1343,7 +1390,6 @@ class MWSClient
                 'FulfillmentDate' => $data['shippingDate']
             ]
         ];
-        $fulfillmentData = [];
 
         $fulfillmentData['ShippingMethod'] = $data['shippingMethod'];
 
@@ -1357,9 +1403,7 @@ class MWSClient
             $fulfillmentData['CarrierName'] = $data['carrierName'];
         }
 
-        if (count($fulfillmentData) > 0) {
-            $fulfillmentMessage['OrderFulfillment']['FulfillmentData'] = $fulfillmentData;
-        }
+        $fulfillmentMessage['OrderFulfillment']['FulfillmentData'] = $fulfillmentData;
 
         return $fulfillmentMessage;
     }

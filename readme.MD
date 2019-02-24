@@ -38,9 +38,9 @@ foreach ($orders as $order) {
     print_r($items);
 }
 ```
-### Update order delivery state
+### Update order delivery status
 ```php
-$client->SetDeliveryState([
+$client->SetDeliveryStatus([
     $AmazonOrderId => [
         "carrierCode" => "UPS",
         "carrierName" => "Carrier Name",
@@ -50,6 +50,13 @@ $client->SetDeliveryState([
 ]);
 ```
 One of the two between "carrierCode" or "carrierName" is required, as well as "shippingMethod".
+### Update order status
+```php
+$client->SetDeliveryState([
+    $AmazonOrderId => [
+        "statusCode" => "Unshipped|PartiallyShipped|Shipped" // required
+]);
+```
 ### Get product attributes
 ```php
 $searchField = 'ASIN'; // Can be GCID, SellerSKU, UPC, EAN, ISBN, or JAN
@@ -155,7 +162,10 @@ $client->GetMyPriceForSKU($sku_array = [], $ItemCondition = null);
 $client->GetOrder($AmazonOrderId);
 
 // Update the information about shipping of an order.
-$client->SetDeliveryState(array $data);
+$client->SetDeliveryStatus(array $data);
+
+// Update the information about status of an order.
+$client->OrderAcknowledgement(array $data);
 
 // Returns the parent product categories that a product belongs to, based on ASIN.
 $client->GetProductCategoriesForASIN($ASIN);
