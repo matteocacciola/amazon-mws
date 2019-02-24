@@ -705,7 +705,7 @@ class MWSClient
                 );
 
                 $arrResponses[] = $response;
-            } while (isset($response['ListOrdersResult']['NextToken']));
+            } while (isset($response['ListOrderItemsResult']['NextToken']));
         }
 
         $finalResponse = [];
@@ -750,7 +750,7 @@ class MWSClient
             : null
         ;
 
-        return ['items' => $items, 'NextToken' => $NextToken];
+        return ['ListOrderItems' => $items, 'NextToken' => $NextToken];
     }
 
     /**
