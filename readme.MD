@@ -167,6 +167,12 @@ $client->SetDeliveryStatus(array $data);
 // Update the information about status of an order.
 $client->OrderAcknowledgement(array $data);
 
+// Get eligible shipping services
+$client->GetEligibleShippingServices($shipmentRequestDetails = []);
+
+// create shipment
+$client->CreateShipment($shipmentRequestDetails = []);
+
 // Returns the parent product categories that a product belongs to, based on ASIN.
 $client->GetProductCategoriesForASIN($ASIN);
 
@@ -192,7 +198,7 @@ $client->ListMarketplaceParticipations();
 $client->ListOrderItems($AmazonOrderId);
 
 // Returns orders created or updated during a time frame that you specify.
-$client->ListOrders($from, $allMarketplaces = false, $states = ['Unshipped', 'PartiallyShipped'], $FulfillmentChannel = 'MFN');
+$client->ListOrders($from, $allMarketplaces = false, $states = ['Unshipped', 'PartiallyShipped'], $FulfillmentChannel = 'MFN', $tillDate = null, $fromUpdated = false);
 
 // Returns your active recommendations for a specific category or for all categories for a specific marketplace.
 $client->ListRecommendations($RecommendationCategory = null);
@@ -202,6 +208,9 @@ $client->RequestReport($report, $StartDate = null, $EndDate = null);
 
 // Uploads a feed for processing by Amazon MWS.
 $client->SubmitFeed($FeedType, $feedContent, $debug = false);
+
+// Returns a list of all feed submissions submitted in the previous 90 days.
+$client->GetFeedSubmissionList();
 
 // Call this method to get the raw feed instead of sending it
 $client->debugNextFeed();
@@ -217,4 +226,5 @@ $client->updateStock($array);
 
 // A method to quickly check if the supplied credentials are valid
 $client->validateCredentials();
+
 ```

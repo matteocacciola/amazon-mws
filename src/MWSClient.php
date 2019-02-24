@@ -2,9 +2,8 @@
 
 namespace MCS;
 
-use DateTime;
-use Exception;
-use DateTimeZone;
+use \DateTime;
+use \Exception;
 use MCS\MWSEndPoint;
 use League\Csv\Reader;
 use League\Csv\Writer;
@@ -54,7 +53,7 @@ class MWSClient
      *
      * @param array $config
      *
-     * @throws Exception
+     * @throws \Exception
      */
     public function __construct(array $config)
     {
@@ -74,12 +73,12 @@ class MWSClient
 
         foreach ($required_keys as $key) {
             if (is_null($this->config[$key])) {
-                throw new Exception('Required field ' . $key . ' is not set');
+                throw new \Exception('Required field ' . $key . ' is not set');
             }
         }
 
         if (!isset($this->MarketplaceIds[$this->config['Marketplace_Id']])) {
-            throw new Exception('Invalid Marketplace Id');
+            throw new \Exception('Invalid Marketplace Id');
         }
 
         $this->config['Application_Name'] = self::APPLICATION_NAME;
@@ -118,6 +117,21 @@ class MWSClient
             } else {
                 return false;
             }
+        }
+    }
+
+    /**
+     * Returns a list of all feed submissions submitted in the previous 90 days.
+     *
+     * @return array
+     */
+    public function GetFeedSubmissionList()
+    {
+        $result = $this->request('GetFeedSubmissionList');
+        if (isset($result['Message']['ProcessingReport'])) {
+            return $result['Message']['ProcessingReport'];
+        } else {
+            return $result;
         }
     }
 
@@ -166,7 +180,6 @@ class MWSClient
         }
 
         return $array;
-
     }
 
     /**
@@ -175,11 +188,12 @@ class MWSClient
      * @param array [$sku_array = []]
      *
      * @return array
+     * @throws \Exception
      */
     public function GetCompetitivePricingForSKU($sku_array = [])
     {
         if (count($sku_array) > 20) {
-            throw new Exception('Maximum amount of SKU\'s for this call is 20');
+            throw new \Exception('Maximum amount of SKU\'s for this call is 20');
         }
 
         $counter = 1;
@@ -236,7 +250,6 @@ class MWSClient
         ];
 
         return $this->request('GetLowestPricedOffersForASIN', $query);
-
     }
 
     /**
@@ -1325,6 +1338,51 @@ class MWSClient
     }
 
     /**
+     * @param array $data
+     *
+     * @return array
+     * @throws Exception
+     */
+    private function createPostOrderFulFillmentDataMessage(string $orderId, array $data)
+    {
+        if ((!isset($data['carrierCode']) || empty($data['carrierCode'])) && (!isset($data['carrierName']) || empty($data['carrierName']))) {
+            throw new \Exception('Missing required carrier data');
+        }
+
+        if (!isset($data['shippingMethod'])) {
+            throw new \Exception('Missing required shipping method data');
+        }
+
+        if (!isset($data['shippingDate'])) {
+            $data['shippingDate'] = date('Y-m-d\TH:i:sP');
+        }
+
+        $fulfillmentMessage = [
+            'MessageID'        => rand(),
+            'OrderFulfillment' => [
+                'AmazonOrderID'   => $orderId,
+                'FulfillmentDate' => $data['shippingDate']
+            ]
+        ];
+
+        $fulfillmentData['ShippingMethod'] = $data['shippingMethod'];
+
+        if (!empty($data['trackingCode'])) {
+            $fulfillmentData['ShipperTrackingNumber'] = $data['trackingCode'];
+        }
+
+        if (!empty($data['carrierCode'])) {
+            $fulfillmentData['CarrierCode'] = $data['carrierCode'];
+        } elseif (!empty($data['carrierName'])) {
+            $fulfillmentData['CarrierName'] = $data['carrierName'];
+        }
+
+        $fulfillmentMessage['OrderFulfillment']['FulfillmentData'] = $fulfillmentData;
+
+        return $fulfillmentMessage;
+    }
+
+    /**
      * Set the status of one or more orders
      * Reference: https://stackoverflow.com/a/37822611
      * 
@@ -1373,49 +1431,63 @@ class MWSClient
     }
 
     /**
-     * @param array $data
+     * Get eligible shipping services
+     *
+     * @param array $shipmentRequestDetails
      *
      * @return array
      * @throws Exception
      */
-    private function createPostOrderFulFillmentDataMessage(string $orderId, array $data)
+    public function GetEligibleShippingServices($shipmentRequestDetails = [])
     {
-        if ((!isset($data['carrierCode']) || empty($data['carrierCode'])) && (!isset($data['carrierName']) || empty($data['carrierName']))) {
-            throw new \Exception('Missing required carrier data');
-        }
-
-        if (!isset($data['shippingMethod'])) {
-            throw new \Exception('Missing required shipping method data');
-        }
-
-        if (!isset($data['shippingDate'])) {
-            $data['shippingDate'] = date('Y-m-d\TH:i:sP');
-        }
-
-        $fulfillmentMessage = [
-            'MessageID'        => rand(),
-            'OrderFulfillment' => [
-                'AmazonOrderID'   => $orderId,
-                'FulfillmentDate' => $data['shippingDate']
-            ]
+        $query = [
+            'MarketplaceId' => $this->config['Marketplace_Id']
         ];
 
-        $fulfillmentData['ShippingMethod'] = $data['shippingMethod'];
+        $query += $shipmentRequestDetails;
 
-        if (!empty($data['trackingCode'])) {
-            $fulfillmentData['ShipperTrackingNumber'] = $data['trackingCode'];
+        $response = $this->request(
+            'GetEligibleShippingServices',
+            $query
+        );
+
+        $result = [];
+        if (isset($response['GetEligibleShippingServicesResult']['ShippingServiceList'])) {
+            return $response['GetEligibleShippingServicesResult']['ShippingServiceList'];
         }
 
-        if (!empty($data['carrierCode'])) {
-            $fulfillmentData['CarrierCode'] = $data['carrierCode'];
-        } elseif (!empty($data['carrierName'])) {
-            $fulfillmentData['CarrierName'] = $data['carrierName'];
-        }
-
-        $fulfillmentMessage['OrderFulfillment']['FulfillmentData'] = $fulfillmentData;
-
-        return $fulfillmentMessage;
+        return $result;
     }
+
+    /**
+     * create shipment
+     *
+     * @param array $shipmentRequestDetails
+     *
+     * @return array
+     * @throws Exception
+     */
+    public function CreateShipment($shipmentRequestDetails = [])
+    {
+        $query = [
+            'MarketplaceId' => $this->config['Marketplace_Id']
+        ];
+
+        $query += $shipmentRequestDetails;
+
+        $response = $this->request(
+            'CreateShipment',
+            $query
+        );
+
+        if (isset($response['CreateShipmentResult']['Shipment'])) {
+            return $response['CreateShipmentResult']['Shipment'];
+        }
+
+        return [];
+    }
+
+
 
     /**
      * Request MWS
@@ -1529,7 +1601,7 @@ class MWSClient
             } else {
                 $message = 'An error occured';
             }
-            throw new Exception($message);
+            throw new \Exception($message);
         }
     }
 }

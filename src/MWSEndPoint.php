@@ -120,14 +120,12 @@ class MWSEndPoint{
             'path' => '/Products/2011-10-01',
             'date' => '2011-10-01'
         ],
-
         'ListMatchingProducts' => [
             'method' => 'POST',
             'action' => 'ListMatchingProducts',
             'path' => '/Products/2011-10-01',
             'date' => '2011-10-01'
         ],
-
         'GetCompetitivePricingForASIN' => [
             'method' => 'POST',
             'action' => 'GetCompetitivePricingForASIN',
@@ -145,6 +143,24 @@ class MWSEndPoint{
             'action' => 'GetLowestPricedOffersForASIN',
             'path' => '/Products/2011-10-01',
             'date' => '2011-10-01'
+        ],
+        'GetFeedSubmissionList' => [
+            'method' => 'POST',
+            'action' => 'GetFeedSubmissionList',
+            'path' => '/',
+            'date' => '2009-01-01'
+        ],
+        'GetEligibleShippingServices' => [
+            'method' => 'POST',
+            'action' => 'GetEligibleShippingServices',
+            'path' => '/MerchantFulfillment/2015-06-01',
+            'date' => '2015-06-01'
+        ],
+        'CreateShipment' => [
+            'method' => 'POST',
+            'action' => 'CreateShipment',
+            'path' => '/MerchantFulfillment/2015-06-01',
+            'date' => '2015-06-01'
         ]
     ];
 
