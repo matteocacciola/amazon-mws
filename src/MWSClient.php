@@ -1324,7 +1324,7 @@ class MWSClient
      */
     private function createPostOrderFulFillmentDataMessage(string $orderId, array $data)
     {
-        if (!isset($data['carrierCode']) && !isset($data['carrierName'])) {
+        if ((!isset($data['carrierCode']) || empty($data['carrierCode'])) && (!isset($data['carrierName']) || empty($data['carrierName']))) {
             throw new Exception('Missing required carrier data');
         }
 
