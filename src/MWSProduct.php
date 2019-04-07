@@ -11,7 +11,7 @@ class MWSProduct{
     public $product_id;
     public $product_id_type;
     public $condition_type = 'New';
-    public $condition_note;
+    public $condition_note = '';
     
     private $validation_errors = [];
     
