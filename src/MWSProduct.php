@@ -1,9 +1,9 @@
 <?php 
 namespace MCS;
 
-use Exception;
-
 class MWSProduct{
+
+    const DATE_FORMAT = "Y-m-d\TH:i:s.\\0\\0\\0\\Z";
 
     public $sku;
     public $price;
@@ -97,7 +97,7 @@ class MWSProduct{
             $val = $this->{$key};
 
             $array[$key] = ($val instanceof \DateTime)
-                ? $val->setTimezone(new \DateTimeZone('UTC'))->format(DATE_ATOM)
+                ? $val->setTimezone(new \DateTimeZone('UTC'))->format(self::DATE_FORMAT)
                 : $val
             ;
         }
