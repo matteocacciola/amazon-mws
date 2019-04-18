@@ -12,6 +12,24 @@ class MWSProduct{
     public $product_id_type;
     public $condition_type = 'New';
     public $condition_note = '';
+    public $ASIN_hint;
+    public $title;
+    public $product_tax_code;
+    public $operation_type;
+    public $sale_price;
+    public $sale_start_date;
+    public $sale_end_date;
+    public $leadtime_to_ship;
+    public $launch_date;
+    public $is_giftwrap_available;
+    public $is_gift_message_available;
+    public $fulfillment_center_id;
+    public $main_offer_image;
+    public $offer_image1;
+    public $offer_image2;
+    public $offer_image3;
+    public $offer_image4;
+    public $offer_image5;
     
     private $validation_errors = [];
     
@@ -19,32 +37,77 @@ class MWSProduct{
         'New', 'Refurbished', 'UsedLikeNew', 
         'UsedVeryGood', 'UsedGood', 'UsedAcceptable'
     ];
-    
+
+    public static $header = [
+        'sku',
+        'price',
+        'quantity',
+        'product-id',
+        'product-id-type',
+        'condition-type',
+        'condition-note',
+        'ASIN-hint',
+        'title',
+        'product-tax-code',
+        'operation-type',
+        'sale-price',
+        'sale-start-date',
+        'sale-end-date',
+        'leadtime-to-ship',
+        'launch-date',
+        'is-giftwrap-available',
+        'is-gift-message-available',
+        'fulfillment-center-id',
+        'main-offer-image',
+        'offer-image1',
+        'offer-image2',
+        'offer-image3',
+        'offer-image4',
+        'offer-image5'
+    ];
+
+    /**
+     * MWSProduct constructor.
+     *
+     * @param array $array
+     */
     public function __construct(array $array = [])
     {
         foreach ($array as $property => $value) {
             $this->{$property} = $value;
         }
     }
-    
+
+    /**
+     * @return array
+     */
     public function getValidationErrors()
     {
         return $this->validation_errors;   
     }
-    
+
+    /**
+     * @return array
+     */
     public function toArray()
     {
-        return [
-            'sku' => $this->sku,
-            'price' => $this->price,
-            'quantity' => $this->quantity,
-            'product_id' => $this->product_id,
-            'product_id_type' => $this->product_id_type,
-            'condition_type' => $this->condition_type,
-            'condition_note' => $this->condition_note,
-        ];
+        $array = [];
+        foreach (self::$header as $key) {
+            $key = str_replace('-', '_', $key);
+            $val = $this->{$key};
+
+            $array[$key] = ($val instanceof \DateTime)
+                ? $val->setTimezone(new \DateTimeZone('UTC'))->format(DATE_ATOM)
+                : $val
+            ;
+        }
+
+        return $array;
     }
-    
+
+    /**
+     * @return bool
+     */
     public function validate()
     {
         if (mb_strlen($this->sku) < 1 or strlen($this->sku) > 40) {
@@ -109,10 +172,18 @@ class MWSProduct{
             return true;    
         }
     }
-    
+
+    /**
+     * @param $property
+     * @param $value
+     *
+     * @return mixed
+     */
     public function __set($property, $value) {
         if (property_exists($this, $property)) {
-            return $this->$property;
+            $this->{$property} = $value;
+
+            return $this->{$property};
         }
     }    
 }

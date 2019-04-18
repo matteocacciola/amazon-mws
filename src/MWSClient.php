@@ -1222,7 +1222,6 @@ class MWSClient
      */
     public function PostProduct($MWSProduct)
     {
-
         if (!is_array($MWSProduct)) {
             $MWSProduct = [$MWSProduct];
         }
@@ -1234,36 +1233,8 @@ class MWSClient
 
         $csv->insertOne(['TemplateType=Offer', 'Version=2014.0703']);
 
-        $header = [
-            'sku',
-            'price',
-            'quantity',
-            'product-id',
-            'product-id-type',
-            'condition-type',
-            'condition-note',
-            'ASIN-hint',
-            'title',
-            'product-tax-code',
-            'operation-type',
-            'sale-price',
-            'sale-start-date',
-            'sale-end-date',
-            'leadtime-to-ship',
-            'launch-date',
-            'is-giftwrap-available',
-            'is-gift-message-available',
-            'fulfillment-center-id',
-            'main-offer-image',
-            'offer-image1',
-            'offer-image2',
-            'offer-image3',
-            'offer-image4',
-            'offer-image5'
-        ];
-
-        $csv->insertOne($header);
-        $csv->insertOne($header);
+        $csv->insertOne(MWSProduct::$header);
+        $csv->insertOne(MWSProduct::$header);
 
         foreach ($MWSProduct as $product) {
             $csv->insertOne(
