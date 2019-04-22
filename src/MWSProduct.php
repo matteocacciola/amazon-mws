@@ -108,7 +108,7 @@ class MWSProduct{
      */
     public function validate()
     {
-        if (!is_null($this->sku) && ((mb_strlen($this->sku) < 1) || (strlen($this->sku) > 40))) {
+        if ((mb_strlen($this->sku) < 1) || (strlen($this->sku) > 40)) {
             $this->validation_errors['sku'] = 'Should be longer than 1 character and shorter than 40 characters';
         }
         
