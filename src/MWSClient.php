@@ -47,7 +47,7 @@ class MWSClient
         'AAHKV2X7AFYLW' => 'mws.amazonservices.com.cn',
     ];
 
-    private $MarketplaceCenters = [
+    /* private $MarketplaceCenters = [
         'A2Q3Y263D00KWC' => 'AMAZON_NA',
         'A2EUQ1WTGCTBG2' => 'AMAZON_NA',
         'A1AM78C64UM0Y8' => 'AMAZON_NA',
@@ -63,10 +63,10 @@ class MWSClient
         'A39IBJ37TRP1C6' => null,
         'A1VC38T7YXB528' => 'AMAZON_JP',
         'AAHKV2X7AFYLW' => 'AMAZON_CN',
-    ];
+    ]; */
 
     protected $debugNextFeed = false;
-    protected $client = null;
+    protected $client;
 
     /**
      * MWSClient constructor.
@@ -1227,11 +1227,12 @@ class MWSClient
     /**
      * Post to create or update a product (_POST_FLAT_FILE_LISTINGS_DATA_)
      *
-     * @param  object $MWSProduct or array of MWSProduct objects
+     * @param object|array $MWSProduct MWSProduct
+     * @param bool $includeCenterId
      *
      * @return array
      */
-    public function PostProduct($MWSProduct)
+    public function PostProduct($MWSProduct, $includeCenterId = false)
     {
         if (!is_array($MWSProduct)) {
             $MWSProduct = [$MWSProduct];
@@ -1249,7 +1250,9 @@ class MWSClient
 
         /** @var MWSProduct $product */
         foreach ($MWSProduct as $product) {
-            $product->fulfillment_center_id = $this->MarketplaceCenters[$this->config['Marketplace_Id']];
+            /* if ($includeCenterId && ($product->quantity > 0)) {
+                $product->fulfillment_center_id = $this->MarketplaceCenters[$this->config['Marketplace_Id']];
+            } */
 
             $csv->insertOne(
                 array_values($product->toArray())
