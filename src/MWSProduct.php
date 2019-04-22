@@ -3,8 +3,6 @@ namespace MCS;
 
 class MWSProduct{
 
-    const DATE_FORMAT = "Y-m-d\TH:i:s.\\0\\0\\0\\Z";
-
     public $sku;
     public $price;
     public $quantity = 0;
@@ -93,11 +91,11 @@ class MWSProduct{
     {
         $array = [];
         foreach (self::$header as $key) {
-            $key = str_replace('-', '_', $key);
-            $val = $this->{$key};
+            $variable = str_replace('-', '_', $key);
+            $val = $this->{$variable};
 
             $array[$key] = ($val instanceof \DateTime)
-                ? $val->setTimezone(new \DateTimeZone('UTC'))->format(self::DATE_FORMAT)
+                ? $val->setTimezone(new \DateTimeZone('UTC'))->format(MWSClient::DATE_FORMAT)
                 : $val
             ;
         }
