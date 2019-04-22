@@ -45,7 +45,24 @@ class MWSClient
         'A39IBJ37TRP1C6' => 'mws.amazonservices.com.au',
         'A1VC38T7YXB528' => 'mws.amazonservices.jp',
         'AAHKV2X7AFYLW' => 'mws.amazonservices.com.cn',
+    ];
 
+    private $MarketplaceCenters = [
+        'A2Q3Y263D00KWC' => 'AMAZON_NA',
+        'A2EUQ1WTGCTBG2' => 'AMAZON_NA',
+        'A1AM78C64UM0Y8' => 'AMAZON_NA',
+        'ATVPDKIKX0DER' => 'AMAZON_NA',
+        'A2VIGQ35RCS4UG' => null,
+        'A1PA6795UKMFR9' => 'AMAZON_EU',
+        'A1RKKUPIHCS9HS' => 'AMAZON_EU',
+        'A13V1IB3VIYZZH' => 'AMAZON_EU',
+        'A1F83G8C2ARO7P' => 'AMAZON_EU',
+        'A21TJRUUN4KGV' => 'AMAZON_IN',
+        'APJ6JRA9NG5V4' => 'AMAZON_EU',
+        'A33AVAJ2PDY3EV' => 'AMAZON_EU',
+        'A39IBJ37TRP1C6' => null,
+        'A1VC38T7YXB528' => 'AMAZON_JP',
+        'AAHKV2X7AFYLW' => 'AMAZON_CN',
     ];
 
     protected $debugNextFeed = false;
@@ -1230,7 +1247,10 @@ class MWSClient
         $csv->insertOne(MWSProduct::$header);
         $csv->insertOne(MWSProduct::$header);
 
+        /** @var MWSProduct $product */
         foreach ($MWSProduct as $product) {
+            $product->fulfillment_center_id = $this->MarketplaceCenters[$this->config['Marketplace_Id']];
+
             $csv->insertOne(
                 array_values($product->toArray())
             );
