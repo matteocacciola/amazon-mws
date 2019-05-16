@@ -1212,7 +1212,7 @@ class MWSClient
                     'StartDate' => $saleprice[$sku]['StartDate']->format(self::DATE_FORMAT),
                     'EndDate' => $saleprice[$sku]['EndDate']->format(self::DATE_FORMAT),
                     'SalePrice' => [
-                        '_value' => strval($saleprice[$sku]['SalePrice']),
+                        '_value' => (string) $saleprice[$sku]['SalePrice'],
                         '_attributes' => [
                             'currency' => 'DEFAULT'
                         ]
@@ -1364,13 +1364,13 @@ class MWSClient
      * Creates a report request and submits the request to Amazon MWS.
      *
      * @param string $report (http://docs.developer.amazonservices.com/en_US/reports/Reports_ReportType.html)
-     * @param DateTime|null [$StartDate = null]
-     * @param DateTime|null [$EndDate = null]
+     * @param \DateTime|null [$StartDate = null]
+     * @param \DateTime|null [$EndDate = null]
      *
      * @return string
      * @throws Exception
      */
-    public function RequestReport($report, $StartDate = null, $EndDate = null)
+    public function RequestReport($report, \DateTime $StartDate = null, \DateTime $EndDate = null)
     {
         $query = [
             'MarketplaceIdList.Id.1' => $this->config['Marketplace_Id'],
@@ -1378,19 +1378,11 @@ class MWSClient
         ];
 
         if (!is_null($StartDate)) {
-            if (!is_a($StartDate, 'DateTime')) {
-                throw new Exception('StartDate should be a DateTime object');
-            } else {
-                $query['StartDate'] = gmdate(self::DATE_FORMAT, $StartDate->getTimestamp());
-            }
+            $query['StartDate'] = gmdate(self::DATE_FORMAT, $StartDate->getTimestamp());
         }
 
         if (!is_null($EndDate)) {
-            if (!is_a($EndDate, 'DateTime')) {
-                throw new Exception('EndDate should be a DateTime object');
-            } else {
-                $query['EndDate'] = gmdate(self::DATE_FORMAT, $EndDate->getTimestamp());
-            }
+            $query['EndDate'] = gmdate(self::DATE_FORMAT, $EndDate->getTimestamp());
         }
 
         $result = $this->request(
@@ -1545,7 +1537,11 @@ class MWSClient
         }
 
         if (!isset($data['shippingDate'])) {
-            $data['shippingDate'] = date('Y-m-d\TH:i:sP');
+            $data['shippingDate'] = gmdate(self::DATE_FORMAT);
+        } else {
+            if ($data['shippingDate'] instanceof \DateTimeInterface) {
+                $data['shippingDate'] = gmdate(self::DATE_FORMAT, $data['shippingDate']->getTimestamp());
+            }
         }
 
         $fulfillmentMessage = [
