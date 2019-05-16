@@ -52,7 +52,7 @@ $client->SetDeliveryStatus([
 One of the two between "carrierCode" or "carrierName" is required, as well as "shippingMethod".
 ### Update order status
 ```php
-$client->SetDeliveryState([
+$client->OrderAcknowledgement([
     $AmazonOrderId => [
         "statusCode" => "Unshipped|PartiallyShipped|Shipped" // required
 ]);

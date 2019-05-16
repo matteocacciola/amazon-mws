@@ -1506,7 +1506,7 @@ class MWSClient
      */
     public function SetDeliveryStatus(array $orders)
     {
-        $feedType = '_POST_ORDER_FULFILLMENT_DATA_';
+        $feedType = '_POST_PRODUCT_DATA_';
 
         $feed = [
             'MessageType' => 'OrderFulfillment',
@@ -1541,6 +1541,8 @@ class MWSClient
         } else {
             if ($data['shippingDate'] instanceof \DateTimeInterface) {
                 $data['shippingDate'] = gmdate(self::DATE_FORMAT, $data['shippingDate']->getTimestamp());
+            } else {
+                throw new \Exception('Invalid shipping date format');
             }
         }
 
@@ -1552,6 +1554,7 @@ class MWSClient
             ]
         ];
 
+        $fulfillmentData = [];
         $fulfillmentData['ShippingMethod'] = $data['shippingMethod'];
 
         if (!empty($data['trackingCode'])) {
@@ -1562,6 +1565,13 @@ class MWSClient
             $fulfillmentData['CarrierCode'] = $data['carrierCode'];
         } elseif (!empty($data['carrierName'])) {
             $fulfillmentData['CarrierName'] = $data['carrierName'];
+        }
+
+        $fulfillmentData['Item'] = [];
+        foreach ($data['items'] as $item) {
+            $fulfillmentData['Item']['MerchantOrderItemID'] = $item['merchantOrderItemId'];
+            $fulfillmentData['Item']['MerchantFulfillmentItemID'] = $item['merchantFullfillmentItemId'];
+            $fulfillmentData['Item']['Quantity'] = $item['quantity'];
         }
 
         $fulfillmentMessage['OrderFulfillment']['FulfillmentData'] = $fulfillmentData;
@@ -1610,9 +1620,16 @@ class MWSClient
             'MessageID' => rand(),
             'OrderAcknowledgement' => [
                 'AmazonOrderID' => $orderId,
-                'StatusCode' => $data['statusCode']
+                'StatusCode' => $data['statusCode'],
+                'Item' => []
             ]
         ];
+
+        foreach ($data['items'] as $item) {
+            $fulfillmentData['Item']['AmazonOrderItemCode'] = $item['merchantFullfillmentItemId'];
+            $fulfillmentData['Item']['MerchantOrderItemID'] = $item['merchantOrderItemId'];
+            $fulfillmentData['Item']['Quantity'] = $item['quantity'];
+        }
 
         return $fulfillmentMessage;
     }
