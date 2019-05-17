@@ -1212,7 +1212,7 @@ class MWSClient
                     'StartDate' => $saleprice[$sku]['StartDate']->format(self::DATE_FORMAT),
                     'EndDate' => $saleprice[$sku]['EndDate']->format(self::DATE_FORMAT),
                     'SalePrice' => [
-                        '_value' => (string) $saleprice[$sku]['SalePrice'],
+                        '_value' => (string)$saleprice[$sku]['SalePrice'],
                         '_attributes' => [
                             'currency' => 'DEFAULT'
                         ]
@@ -1506,7 +1506,7 @@ class MWSClient
      */
     public function SetDeliveryStatus(array $orders)
     {
-        $feedType = '_POST_PRODUCT_DATA_';
+        $feedType = '_POST_ORDER_FULFILLMENT_DATA_';
 
         $feed = [
             'MessageType' => 'OrderFulfillment',
@@ -1550,6 +1550,7 @@ class MWSClient
             'MessageID' => rand(),
             'OrderFulfillment' => [
                 'AmazonOrderID' => $orderId,
+                'MerchantFulfillmentID' => $data['merchantFulfillmentId'],
                 'FulfillmentDate' => $data['shippingDate']
             ]
         ];
@@ -1569,9 +1570,11 @@ class MWSClient
 
         $fulfillmentData['Item'] = [];
         foreach ($data['items'] as $item) {
-            $fulfillmentData['Item']['MerchantOrderItemID'] = $item['merchantOrderItemId'];
-            $fulfillmentData['Item']['MerchantFulfillmentItemID'] = $item['merchantFullfillmentItemId'];
-            $fulfillmentData['Item']['Quantity'] = $item['quantity'];
+            $fulfillmentData['Item'][] = [
+                'MerchantOrderItemID' => $item['merchantOrderItemId'],
+                'MerchantFulfillmentItemID' => $item['merchantFullfillmentItemId'],
+                'Quantity' => $item['quantity']
+            ];
         }
 
         $fulfillmentMessage['OrderFulfillment']['FulfillmentData'] = $fulfillmentData;
@@ -1612,7 +1615,7 @@ class MWSClient
      */
     private function createOrderAcknowledgementDataMessage(string $orderId, array $data)
     {
-        if ((!isset($data['statusCode']) || empty($data['statusCode']))) {
+        if (!isset($data['statusCode']) || empty($data['statusCode'])) {
             throw new \Exception('Missing required status code data');
         }
 
@@ -1620,16 +1623,21 @@ class MWSClient
             'MessageID' => rand(),
             'OrderAcknowledgement' => [
                 'AmazonOrderID' => $orderId,
+                'MerchantOrderID' => $data['merchantOrderId'],
                 'StatusCode' => $data['statusCode'],
                 'Item' => []
             ]
         ];
 
+        $fulfillmentItems = [];
         foreach ($data['items'] as $item) {
-            $fulfillmentData['Item']['AmazonOrderItemCode'] = $item['merchantFullfillmentItemId'];
-            $fulfillmentData['Item']['MerchantOrderItemID'] = $item['merchantOrderItemId'];
-            $fulfillmentData['Item']['Quantity'] = $item['quantity'];
+            $fulfillmentItems[] = [
+                'AmazonOrderItemCode' => $item['merchantFullfillmentItemId'],
+                'MerchantOrderItemID' => $item['merchantOrderItemId'],
+            ];
         }
+
+        $fulfillmentMessage['OrderAcknowledgement']['Item'] = $fulfillmentItems;
 
         return $fulfillmentMessage;
     }
@@ -1794,7 +1802,6 @@ class MWSClient
      */
     private function request($endPoint, array $query = [], $body = null, $raw = false)
     {
-
         $endPoint = MWSEndPoint::get($endPoint);
 
         $merge = [
@@ -1827,7 +1834,6 @@ class MWSClient
         }
 
         try {
-
             $headers = [
                 'Accept' => 'application/xml',
                 'x-amazon-user-agent' => $this->config['Application_Name'] . '/' . $this->config['Application_Version']
@@ -1872,24 +1878,22 @@ class MWSClient
                 $this->client = new Client();
             }
 
-            $response = $this->client->request(
-                $endPoint['method'],
+            $response = $this->client->{strtolower($endPoint['method'])}(
                 $this->config['Region_Url'] . $endPoint['path'],
                 $requestOptions
             );
 
-
             $body = (string)$response->getBody();
-
 
             if ($raw) {
                 return $body;
-            } else if (strpos(strtolower($response->getHeader('Content-Type')[0]), 'xml') !== false) {
-                return $this->xmlToArray($body);
-            } else {
-                return $body;
             }
 
+            if (strpos(strtolower($response->getHeader('Content-Type')[0]), 'xml') !== false) {
+                return $this->xmlToArray($body);
+            }
+
+            return $body;
         } catch (BadResponseException $e) {
             if ($e->hasResponse()) {
                 $message = $e->getResponse();
