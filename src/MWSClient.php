@@ -1316,7 +1316,7 @@ class MWSClient
 
         $query = [
             'FeedType' => $FeedType,
-            'PurgeAndReplace' => ($purgeAndReplace ? 'true' : 'false'),
+            'PurgeAndReplace' => $purgeAndReplace ? 'true' : 'false',
             'Merchant' => $this->config['Seller_Id'],
             'MarketplaceId.Id.1' => false,
             'SellerId' => false,
