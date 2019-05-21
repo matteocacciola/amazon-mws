@@ -338,6 +338,7 @@ class MWSClient
      * @param string [$ItemCondition = null]
      *
      * @return array
+     * @throws Exception
      */
     public function GetMyPriceForASIN($asin_array = [], $ItemCondition = null)
     {
@@ -392,6 +393,7 @@ class MWSClient
      * @param array [$ItemCondition = null] Should be one in: New, Used, Collectible, Refurbished, Club. Default: All
      *
      * @return array
+     * @throws Exception
      */
     public function GetLowestOfferListingsForASIN($asin_array = [], $ItemCondition = null)
     {
@@ -445,7 +447,7 @@ class MWSClient
      * @param \DateTime $from , beginning of time frame
      * @param boolean $allMarketplaces , list orders from all marketplaces
      * @param array $states , an array containing orders states you want to filter on
-     * @param string $FulfillmentChannel
+     * @param string $FulfillmentChannels
      * @param \DateTime $till , end of time frame
      * @param bool $fromUpdated
      *
@@ -527,7 +529,7 @@ class MWSClient
      * @param \DateTime $from , beginning of time frame
      * @param boolean $allMarketplaces , list orders from all marketplaces
      * @param array $states , an array containing orders states you want to filter on
-     * @param string $FulfillmentChannel
+     * @param string $FulfillmentChannels
      * @param \DateTime $till , end of time frame
      * @param bool $fromUpdated
      *
@@ -655,7 +657,7 @@ class MWSClient
      *
      * @param string $AmazonOrderId
      *
-     * @return array if the order is found, false if not
+     * @return string|null string if the order is found, false if not
      */
     public function GetOrder($AmazonOrderId)
     {
@@ -1099,23 +1101,26 @@ class MWSClient
      */
     public function DeleteProductBySKU(array $array)
     {
-
-        $feed = [
-            'MessageType' => 'Product',
-            'Message' => []
-        ];
-
-        foreach ($array as $sku) {
-            $feed['Message'][] = [
-                'MessageID' => rand(),
-                'OperationType' => 'Delete',
-                'Product' => [
-                    'SKU' => $sku
-                ]
+        if (count($array) > 0) {
+            $feed = [
+                'MessageType' => 'Product',
+                'Message' => []
             ];
+
+            foreach ($array as $sku) {
+                $feed['Message'][] = [
+                    'MessageID' => rand(),
+                    'OperationType' => 'Delete',
+                    'Product' => [
+                        'SKU' => $sku
+                    ]
+                ];
+            }
+
+            return $this->SubmitFeed('_POST_PRODUCT_DATA_', $feed);
         }
 
-        return $this->SubmitFeed('_POST_PRODUCT_DATA_', $feed);
+        return [];
     }
 
     /**
@@ -1127,24 +1132,27 @@ class MWSClient
      */
     public function UpdateStock(array $array)
     {
-        $feed = [
-            'MessageType' => 'Inventory',
-            'Message' => []
-        ];
-
-        foreach ($array as $sku => $quantity) {
-            $feed['Message'][] = [
-                'MessageID' => rand(),
-                'OperationType' => 'Update',
-                'Inventory' => [
-                    'SKU' => $sku,
-                    'Quantity' => (int)$quantity
-                ]
+        if (count($array) > 0) {
+            $feed = [
+                'MessageType' => 'Inventory',
+                'Message' => []
             ];
+
+            foreach ($array as $sku => $quantity) {
+                $feed['Message'][] = [
+                    'MessageID' => rand(),
+                    'OperationType' => 'Update',
+                    'Inventory' => [
+                        'SKU' => $sku,
+                        'Quantity' => (int)$quantity
+                    ]
+                ];
+            }
+
+            return $this->SubmitFeed('_POST_INVENTORY_AVAILABILITY_DATA_', $feed);
         }
 
-        return $this->SubmitFeed('_POST_INVENTORY_AVAILABILITY_DATA_', $feed);
-
+        return [];
     }
 
     /**
@@ -1156,24 +1164,28 @@ class MWSClient
      */
     public function UpdateStockWithFulfillmentLatency(array $array)
     {
-        $feed = [
-            'MessageType' => 'Inventory',
-            'Message' => []
-        ];
-
-        foreach ($array as $item) {
-            $feed['Message'][] = [
-                'MessageID' => rand(),
-                'OperationType' => 'Update',
-                'Inventory' => [
-                    'SKU' => $item['sku'],
-                    'Quantity' => (int)$item['quantity'],
-                    'FulfillmentLatency' => $item['latency']
-                ]
+        if (count($array) > 0) {
+            $feed = [
+                'MessageType' => 'Inventory',
+                'Message' => []
             ];
+
+            foreach ($array as $item) {
+                $feed['Message'][] = [
+                    'MessageID' => rand(),
+                    'OperationType' => 'Update',
+                    'Inventory' => [
+                        'SKU' => $item['sku'],
+                        'Quantity' => (int)$item['quantity'],
+                        'FulfillmentLatency' => $item['latency']
+                    ]
+                ];
+            }
+
+            return $this->SubmitFeed('_POST_INVENTORY_AVAILABILITY_DATA_', $feed);
         }
 
-        return $this->SubmitFeed('_POST_INVENTORY_AVAILABILITY_DATA_', $feed);
+        return [];
     }
 
     /**
@@ -1188,40 +1200,44 @@ class MWSClient
      */
     public function UpdatePrice(array $standardprice, array $saleprice = null)
     {
-        $feed = [
-            'MessageType' => 'Price',
-            'Message' => []
-        ];
-
-        foreach ($standardprice as $sku => $price) {
-            $feed['Message'][] = [
-                'MessageID' => rand(),
-                'Price' => [
-                    'SKU' => $sku,
-                    'StandardPrice' => [
-                        '_value' => strval($price),
-                        '_attributes' => [
-                            'currency' => 'DEFAULT'
-                        ]
-                    ]
-                ]
+        if (count($standardprice) > 0) {
+            $feed = [
+                'MessageType' => 'Price',
+                'Message' => []
             ];
 
-            if (isset($saleprice[$sku]) && is_array($saleprice[$sku])) {
-                $feed['Message'][count($feed['Message']) - 1]['Price']['Sale'] = [
-                    'StartDate' => $saleprice[$sku]['StartDate']->format(self::DATE_FORMAT),
-                    'EndDate' => $saleprice[$sku]['EndDate']->format(self::DATE_FORMAT),
-                    'SalePrice' => [
-                        '_value' => (string)$saleprice[$sku]['SalePrice'],
-                        '_attributes' => [
-                            'currency' => 'DEFAULT'
+            foreach ($standardprice as $sku => $price) {
+                $feed['Message'][] = [
+                    'MessageID' => rand(),
+                    'Price' => [
+                        'SKU' => $sku,
+                        'StandardPrice' => [
+                            '_value' => strval($price),
+                            '_attributes' => [
+                                'currency' => 'DEFAULT'
+                            ]
                         ]
                     ]
                 ];
+
+                if (isset($saleprice[$sku]) && is_array($saleprice[$sku])) {
+                    $feed['Message'][count($feed['Message']) - 1]['Price']['Sale'] = [
+                        'StartDate' => $saleprice[$sku]['StartDate']->format(self::DATE_FORMAT),
+                        'EndDate' => $saleprice[$sku]['EndDate']->format(self::DATE_FORMAT),
+                        'SalePrice' => [
+                            '_value' => (string)$saleprice[$sku]['SalePrice'],
+                            '_attributes' => [
+                                'currency' => 'DEFAULT'
+                            ]
+                        ]
+                    ];
+                }
             }
+
+            return $this->SubmitFeed('_POST_PRODUCT_PRICING_DATA_', $feed);
         }
 
-        return $this->SubmitFeed('_POST_PRODUCT_PRICING_DATA_', $feed);
+        return [];
     }
 
     /**
@@ -1238,28 +1254,32 @@ class MWSClient
             $MWSProduct = [$MWSProduct];
         }
 
-        $csv = Writer::createFromFileObject(new SplTempFileObject());
+        if (count($MWSProduct) > 0) {
+            $csv = Writer::createFromFileObject(new SplTempFileObject());
 
-        $csv->setDelimiter("\t");
-        $csv->setInputEncoding('iso-8859-1');
+            $csv->setDelimiter("\t");
+            $csv->setInputEncoding('iso-8859-1');
 
-        $csv->insertOne(['TemplateType=Offer', 'Version=2014.0703']);
+            $csv->insertOne(['TemplateType=Offer', 'Version=2014.0703']);
 
-        $csv->insertOne(MWSProduct::$header);
-        $csv->insertOne(MWSProduct::$header);
+            $csv->insertOne(MWSProduct::$header);
+            $csv->insertOne(MWSProduct::$header);
 
-        /** @var MWSProduct $product */
-        foreach ($MWSProduct as $product) {
-            /* if ($includeCenterId && ($product->quantity > 0)) {
-                $product->fulfillment_center_id = $this->MarketplaceCenters[$this->config['Marketplace_Id']];
-            } */
+            /** @var MWSProduct $product */
+            foreach ($MWSProduct as $product) {
+                /* if ($includeCenterId && ($product->quantity > 0)) {
+                    $product->fulfillment_center_id = $this->MarketplaceCenters[$this->config['Marketplace_Id']];
+                } */
 
-            $csv->insertOne(
-                array_values($product->toArray())
-            );
+                $csv->insertOne(
+                    array_values($product->toArray())
+                );
+            }
+
+            return $this->SubmitFeed('_POST_FLAT_FILE_LISTINGS_DATA_', $csv->__toString());
         }
 
-        return $this->SubmitFeed('_POST_FLAT_FILE_LISTINGS_DATA_', $csv->__toString());
+        return [];
     }
 
     /**
@@ -1306,7 +1326,7 @@ class MWSClient
 
         if ($debug === true) {
             return $feedContent;
-        } else if ($this->debugNextFeed == true) {
+        } elseif ($this->debugNextFeed == true) {
             $this->debugNextFeed = false;
 
             return $feedContent;
@@ -1506,18 +1526,22 @@ class MWSClient
      */
     public function SetDeliveryStatus(array $orders)
     {
-        $feedType = '_POST_ORDER_FULFILLMENT_DATA_';
+        if (count($orders) > 0) {
+            $feedType = '_POST_ORDER_FULFILLMENT_DATA_';
 
-        $feed = [
-            'MessageType' => 'OrderFulfillment',
-            'Message' => []
-        ];
+            $feed = [
+                'MessageType' => 'OrderFulfillment',
+                'Message' => []
+            ];
 
-        foreach ($orders as $orderId => $data) {
-            $feed['Message'][] = $this->createPostOrderFulFillmentDataMessage($orderId, $data);
+            foreach ($orders as $orderId => $data) {
+                $feed['Message'][] = $this->createPostOrderFulFillmentDataMessage($orderId, $data);
+            }
+
+            return $this->SubmitFeed($feedType, $feed);
         }
 
-        return $this->SubmitFeed($feedType, $feed);
+        return [];
     }
 
     /**
@@ -1592,18 +1616,22 @@ class MWSClient
      */
     public function OrderAcknowledgement(array $orders)
     {
-        $feedType = '_POST_ORDER_ACKNOWLEDGEMENT_DATA_';
+        if (count($orders) > 0) {
+            $feedType = '_POST_ORDER_ACKNOWLEDGEMENT_DATA_';
 
-        $feed = [
-            'MessageType' => 'OrderAcknowledgement',
-            'Message' => []
-        ];
+            $feed = [
+                'MessageType' => 'OrderAcknowledgement',
+                'Message' => []
+            ];
 
-        foreach ($orders as $orderId => $data) {
-            $feed['Message'][] = $this->createOrderAcknowledgementDataMessage($orderId, $data);
+            foreach ($orders as $orderId => $data) {
+                $feed['Message'][] = $this->createOrderAcknowledgementDataMessage($orderId, $data);
+            }
+
+            return $this->SubmitFeed($feedType, $feed);
         }
 
-        return $this->SubmitFeed($feedType, $feed);
+        return [];
     }
 
     /**
@@ -1883,20 +1911,20 @@ class MWSClient
                 $requestOptions
             );
 
-            $body = (string)$response->getBody();
+            $content = (string)$response->getBody();
 
             if ($raw) {
-                return $body;
+                return $content;
             }
 
             if (strpos(strtolower($response->getHeader('Content-Type')[0]), 'xml') !== false) {
-                return $this->xmlToArray($body);
+                return $this->xmlToArray($content);
             }
 
-            return $body;
-        } catch (BadResponseException $e) {
-            if ($e->hasResponse()) {
-                $message = $e->getResponse();
+            return $content;
+        } catch (BadResponseException $ex) {
+            if ($ex->hasResponse()) {
+                $message = $ex->getResponse();
                 $message = $message->getBody();
                 if (strpos($message, '<ErrorResponse') !== false) {
                     $error = simplexml_load_string($message);
