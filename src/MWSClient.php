@@ -1917,7 +1917,12 @@ class MWSClient
                 return $content;
             }
 
-            if (strpos(strtolower($response->getHeader('Content-Type')[0]), 'xml') !== false) {
+            $contentTypeHeader = is_array($response->getHeader('Content-Type'))
+                ? $response->getHeader('Content-Type')[0]
+                : $response->getHeader('Content-Type')
+            ;
+
+            if (strpos(strtolower($contentTypeHeader), 'xml') !== false) {
                 return $this->xmlToArray($content);
             }
 
