@@ -1,8 +1,9 @@
-<?php 
+<?php
+
 namespace MCS;
 
-class MWSProduct{
-
+class MWSProduct
+{
     public $sku;
     public $price;
     public $quantity = 0;
@@ -28,12 +29,16 @@ class MWSProduct{
     public $offer_image3;
     public $offer_image4;
     public $offer_image5;
-    
+
     private $validation_errors = [];
-    
+
     private $conditions = [
-        'New', 'Refurbished', 'UsedLikeNew', 
-        'UsedVeryGood', 'UsedGood', 'UsedAcceptable'
+        'New',
+        'Refurbished',
+        'UsedLikeNew',
+        'UsedVeryGood',
+        'UsedGood',
+        'UsedAcceptable'
     ];
 
     public static $header = [
@@ -81,7 +86,7 @@ class MWSProduct{
      */
     public function getValidationErrors()
     {
-        return $this->validation_errors;   
+        return $this->validation_errors;
     }
 
     /**
@@ -96,8 +101,7 @@ class MWSProduct{
 
             $array[$key] = ($val instanceof \DateTime)
                 ? $val->setTimezone(new \DateTimeZone('UTC'))->format(MWSClient::DATE_FORMAT)
-                : $val
-            ;
+                : $val;
         }
 
         return $array;
@@ -111,63 +115,63 @@ class MWSProduct{
         if ((mb_strlen($this->sku) < 1) || (strlen($this->sku) > 40)) {
             $this->validation_errors['sku'] = 'Should be longer than 1 character and shorter than 40 characters';
         }
-        
+
         $this->price = str_replace(',', '.', $this->price);
-        
+
         $exploded_price = explode('.', $this->price);
-        
+
         if (count($exploded_price) == 2) {
-            if (mb_strlen($exploded_price[0]) > 18) { 
-                $this->validation_errors['price'] = 'Too high';        
+            if (mb_strlen($exploded_price[0]) > 18) {
+                $this->validation_errors['price'] = 'Too high';
             } else if (mb_strlen($exploded_price[1]) > 2) {
-                $this->validation_errors['price'] = 'Too many decimals';    
+                $this->validation_errors['price'] = 'Too many decimals';
             }
         } else {
-            $this->validation_errors['price'] = 'Looks wrong';        
+            $this->validation_errors['price'] = 'Looks wrong';
         }
-        
-        $this->quantity = (int) $this->quantity;
-        $this->product_id = (string) $this->product_id;
-        
+
+        $this->quantity = (int)$this->quantity;
+        $this->product_id = (string)$this->product_id;
+
         $product_id_length = mb_strlen($this->product_id);
-        
+
         switch ($this->product_id_type) {
             case 'ASIN':
                 if ($product_id_length != 10) {
-                    $this->validation_errors['product_id'] = 'ASIN should be 10 characters long';                
+                    $this->validation_errors['product_id'] = 'ASIN should be 10 characters long';
                 }
                 break;
             case 'UPC':
                 if ($product_id_length != 12) {
-                    $this->validation_errors['product_id'] = 'UPC should be 12 characters long';                
+                    $this->validation_errors['product_id'] = 'UPC should be 12 characters long';
                 }
                 break;
             case 'EAN':
                 if ($product_id_length != 13) {
-                    $this->validation_errors['product_id'] = 'EAN should be 13 characters long';                
+                    $this->validation_errors['product_id'] = 'EAN should be 13 characters long';
                 }
                 break;
             default:
-               $this->validation_errors['product_id_type'] = 'Not one of: ASIN,UPC,EAN';        
+                $this->validation_errors['product_id_type'] = 'Not one of: ASIN,UPC,EAN';
         }
-        
+
         if (!in_array($this->condition_type, $this->conditions)) {
-            $this->validation_errors['condition_type'] = 'Not one of: ' . implode($this->conditions, ',');                
+            $this->validation_errors['condition_type'] = 'Not one of: ' . implode($this->conditions, ',');
         }
-        
+
         if ($this->condition_type != 'New') {
             $length = mb_strlen($this->condition_note);
             if ($length < 1) {
-                $this->validation_errors['condition_note'] = 'Required if condition_type not is New';                    
+                $this->validation_errors['condition_note'] = 'Required if condition_type not is New';
             } else if ($length > 1000) {
-                $this->validation_errors['condition_note'] = 'Should not exceed 1000 characters';                    
+                $this->validation_errors['condition_note'] = 'Should not exceed 1000 characters';
             }
         }
-        
+
         if (count($this->validation_errors) > 0) {
-            return false;    
+            return false;
         } else {
-            return true;    
+            return true;
         }
     }
 
@@ -177,11 +181,12 @@ class MWSProduct{
      *
      * @return mixed
      */
-    public function __set($property, $value) {
+    public function __set($property, $value)
+    {
         if (property_exists($this, $property)) {
             $this->{$property} = $value;
 
             return $this->{$property};
         }
-    }    
+    }
 }

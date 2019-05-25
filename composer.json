@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "php": ">= 5.4",
+        "php": ">= 5.5",
         "guzzlehttp/guzzle": "^5.3",
         "spatie/array-to-xml": "^2.1",
         "league/csv": "^8.1"

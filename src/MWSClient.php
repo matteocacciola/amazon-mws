@@ -446,22 +446,40 @@ class MWSClient
      *
      * @param \DateTime $from , beginning of time frame
      * @param boolean $allMarketplaces , list orders from all marketplaces
-     * @param array $states , an array containing orders states you want to filter on
+     * @param array $statuses , an array containing orders states you want to filter on
      * @param string $FulfillmentChannels
      * @param \DateTime $till , end of time frame
      * @param bool $fromUpdated
      *
-     * @return array
+     * @return array|mixed|string
+     * @throws Exception
      */
     public function ListOrders(
         \DateTime $from,
         $allMarketplaces = false,
-        $states = ['Unshipped', 'PartiallyShipped'],
+        $statuses = [MWSOrder::STATUS_UNSHIPPED, MWSOrder::STATUS_PARTIALLY_SHIPPED],
         $FulfillmentChannels = 'MFN',
         \DateTime $till = null,
         $fromUpdated = false
-    )
-    {
+    ) {
+        if (empty($statuses)) {
+            $statuses = MWSOrder::getStatuses();
+        }
+
+        // there are some $statuses which are not valid
+        if (array_diff($statuses, MWSOrder::getStatuses())) {
+            throw new \Exception('Invalid value(s) passed for statuses', 400);
+        }
+
+        $conditionStatusUnshipped = in_array(MWSOrder::STATUS_UNSHIPPED, $statuses);
+        $conditionStatusPartiallyShipped = in_array(MWSOrder::STATUS_PARTIALLY_SHIPPED, $statuses);
+        $conditionBothShipping = $conditionStatusUnshipped && $conditionStatusPartiallyShipped;
+        $conditionNoneShipping = !$conditionStatusUnshipped && !$conditionStatusPartiallyShipped;
+
+        if (!$conditionBothShipping && !$conditionNoneShipping) {
+            throw new \Exception('Statuses "Unshipped" and "PartiallyShipped" must be present either at the same time or none of the two', 400);
+        }
+
         if ($fromUpdated) {
             $query = [
                 'LastUpdatedAfter' => gmdate(self::DATE_FORMAT, $from->getTimestamp())
@@ -477,7 +495,7 @@ class MWSClient
         }
 
         $counter = 1;
-        foreach ($states as $status) {
+        foreach ($statuses as $status) {
             $query['OrderStatus.Status.' . $counter] = $status;
             $counter = $counter + 1;
         }
@@ -528,22 +546,40 @@ class MWSClient
      *
      * @param \DateTime $from , beginning of time frame
      * @param boolean $allMarketplaces , list orders from all marketplaces
-     * @param array $states , an array containing orders states you want to filter on
+     * @param array $statuses , an array containing orders states you want to filter on
      * @param string $FulfillmentChannels
      * @param \DateTime $till , end of time frame
      * @param bool $fromUpdated
      *
      * @return array
+     * @throws Exception
      */
     public function ListOrdersWithAllNextTokens(
         \DateTime $from,
         $allMarketplaces = false,
-        $states = ['Unshipped', 'PartiallyShipped'],
+        $statuses = ['Unshipped', 'PartiallyShipped'],
         $FulfillmentChannels = 'MFN',
         \DateTime $till = null,
         $fromUpdated = false
-    )
-    {
+    ) {
+        if (empty($statuses)) {
+            $statuses = MWSOrder::getStatuses();
+        }
+
+        // there are some $statuses which are not valid
+        if (array_diff($statuses, MWSOrder::getStatuses())) {
+            throw new \Exception('Invalid value(s) passed for statuses', 400);
+        }
+
+        $conditionStatusUnshipped = in_array(MWSOrder::STATUS_UNSHIPPED, $statuses);
+        $conditionStatusPartiallyShipped = in_array(MWSOrder::STATUS_PARTIALLY_SHIPPED, $statuses);
+        $conditionBothShipping = $conditionStatusUnshipped && $conditionStatusPartiallyShipped;
+        $conditionNoneShipping = !$conditionStatusUnshipped && !$conditionStatusPartiallyShipped;
+
+        if (!$conditionBothShipping && !$conditionNoneShipping) {
+            throw new \Exception('Statuses "Unshipped" and "PartiallyShipped" must be present either at the same time or none of the two', 400);
+        }
+
         if ($fromUpdated) {
             $query = [
                 'LastUpdatedAfter' => gmdate(self::DATE_FORMAT, $from->getTimestamp())
@@ -559,7 +595,7 @@ class MWSClient
         }
 
         $counter = 1;
-        foreach ($states as $status) {
+        foreach ($statuses as $status) {
             $query['OrderStatus.Status.' . $counter] = $status;
             $counter = $counter + 1;
         }
@@ -1919,8 +1955,7 @@ class MWSClient
 
             $contentTypeHeader = is_array($response->getHeader('Content-Type'))
                 ? $response->getHeader('Content-Type')[0]
-                : $response->getHeader('Content-Type')
-            ;
+                : $response->getHeader('Content-Type');
 
             if (strpos(strtolower($contentTypeHeader), 'xml') !== false) {
                 return $this->xmlToArray($content);
