@@ -1695,10 +1695,16 @@ class MWSClient
 
         $fulfillmentItems = [];
         foreach ($data['items'] as $item) {
-            $fulfillmentItems[] = [
+            $temp = [
                 'AmazonOrderItemCode' => $item['merchantFullfillmentItemId'],
                 'MerchantOrderItemID' => $item['merchantOrderItemId'],
             ];
+
+            if ($data['statusCode'] == MWSOrder::ACK_STATUS_FAILURE) {
+                $temp['CancelReason'] = $item['cancelReason'] ?? MWSOrder::CANCEL_REASON;
+            }
+
+            $fulfillmentItems[] = $temp;
         }
 
         $fulfillmentMessage['OrderAcknowledgement']['Item'] = $fulfillmentItems;
