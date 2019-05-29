@@ -18,6 +18,8 @@ class MWSOrder
     const ACK_STATUS_SUCCESS = 'Success';
     const ACK_STATUS_FAILURE = 'Failure';
 
+    const CANCEL_REASON = 'GeneralAdjustment';
+
     /**
      *
      * @param string $prefix
