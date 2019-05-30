@@ -1694,7 +1694,8 @@ class MWSClient
         ];
 
         $fulfillmentItems = [];
-        foreach ($data['items'] as $item) {
+        $items = $data['items'] ?? [];
+        foreach ($items as $item) {
             $temp = [
                 'AmazonOrderItemCode' => $item['merchantFullfillmentItemId'],
                 'MerchantOrderItemID' => $item['merchantOrderItemId'],
