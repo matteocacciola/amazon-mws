@@ -1382,6 +1382,12 @@ class MWSClient
         $query['MarketplaceIdList.Id.1'] = $this->config['Marketplace_Id'];
         //}
 
+        $feedContent = str_replace(
+            '<AmazonEnvelope>',
+            '<AmazonEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="amzn-envelope.xsd">',
+            $feedContent
+        );
+
         $response = $this->request(
             'SubmitFeed',
             $query,
