@@ -1622,11 +1622,6 @@ class MWSClient
         ];
 
         $fulfillmentData = [];
-        $fulfillmentData['ShippingMethod'] = $data['shippingMethod'];
-
-        if (!empty($data['trackingCode'])) {
-            $fulfillmentData['ShipperTrackingNumber'] = $data['trackingCode'];
-        }
 
         if (!empty($data['carrierCode'])) {
             $fulfillmentData['CarrierCode'] = $data['carrierCode'];
@@ -1634,13 +1629,21 @@ class MWSClient
             $fulfillmentData['CarrierName'] = $data['carrierName'];
         }
 
-        $fulfillmentData['Item'] = [];
-        foreach ($data['items'] as $item) {
-            $fulfillmentData['Item'][] = [
-                'MerchantOrderItemID' => $item['merchantOrderItemId'],
-                'MerchantFulfillmentItemID' => $item['merchantFullfillmentItemId'],
-                'Quantity' => $item['quantity']
-            ];
+        $fulfillmentData['ShippingMethod'] = $data['shippingMethod'];
+
+        if (!empty($data['trackingCode'])) {
+            $fulfillmentData['ShipperTrackingNumber'] = $data['trackingCode'];
+        }
+
+        if (!empty($data['items'])) {
+            $fulfillmentData['Item'] = [];
+            foreach ($data['items'] as $item) {
+                $fulfillmentData['Item'][] = [
+                    'MerchantOrderItemID' => $item['merchantOrderItemId'],
+                    'MerchantFulfillmentItemID' => $item['merchantFullfillmentItemId'],
+                    'Quantity' => $item['quantity']
+                ];
+            }
         }
 
         $fulfillmentMessage['OrderFulfillment']['FulfillmentData'] = $fulfillmentData;
@@ -1699,22 +1702,26 @@ class MWSClient
             ]
         ];
 
-        $fulfillmentItems = [];
-        $items = $data['items'] ?? [];
-        foreach ($items as $item) {
-            $temp = [
-                'AmazonOrderItemCode' => $item['merchantFullfillmentItemId'],
-                'MerchantOrderItemID' => $item['merchantOrderItemId'],
-            ];
+        // if (!empty($data['items'])) {
+        if (($data['statusCode'] == MWSOrder::ACK_STATUS_SUCCESS) && !empty($data['items'])) {
+            $fulfillmentItems = [];
+            foreach ($data['items'] as $item) {
+                $temp = [
+                    'AmazonOrderItemCode' => $item['merchantFullfillmentItemId'],
+                    'MerchantOrderItemID' => $item['merchantOrderItemId'],
+                ];
 
-            if ($data['statusCode'] == MWSOrder::ACK_STATUS_FAILURE) {
-                $temp['CancelReason'] = $item['cancelReason'] ?? MWSOrder::CANCEL_REASON;
+                /*
+                if ($data['statusCode'] == MWSOrder::ACK_STATUS_FAILURE) {
+                    $temp['CancelReason'] = $item['cancelReason'] ?? MWSOrder::CANCEL_REASON;
+                }
+                */
+
+                $fulfillmentItems[] = $temp;
             }
 
-            $fulfillmentItems[] = $temp;
+            $fulfillmentMessage['OrderAcknowledgement']['Item'] = $fulfillmentItems;
         }
-
-        $fulfillmentMessage['OrderAcknowledgement']['Item'] = $fulfillmentItems;
 
         return $fulfillmentMessage;
     }
